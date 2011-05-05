@@ -29,12 +29,12 @@ public interface DragListener {
 	 * Called when a drag starts.
 	 * @param itemView - the view of the item to be dragged i.e. the drag view
 	 */
-	void onStartDrag(View itemView);
+	void onStartDrag(View itemView, int x, int y);
 	
 	/**
 	 * Called when a drag is to be performed.
 	 * @param x - horizontal coordinate of MotionEvent.
-	 * @param y - verital coordinate of MotionEvent.
+	 * @param y - vertical coordinate of MotionEvent.
 	 * @param listView - the listView
 	 */
 	void onDrag(int x, int y, ListView listView);
@@ -46,4 +46,10 @@ public interface DragListener {
 	 * @param itemView - the view of the item to be dragged i.e. the drag view
 	 */
 	void onStopDrag(View itemView);
+	
+	/**
+	 * Called after a drag starts and drag view is initialized.
+	 * @param itemView - the view of the item to be dragged i.e. the drag view
+	 */
+	void afterStartDrag(View itemView);
 }

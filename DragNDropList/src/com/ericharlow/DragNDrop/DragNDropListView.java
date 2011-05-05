@@ -20,7 +20,6 @@ import android.content.Context;
 import android.graphics.Bitmap;
 import android.graphics.PixelFormat;
 import android.util.AttributeSet;
-import android.view.GestureDetector;
 import android.view.Gravity;
 import android.view.MotionEvent;
 import android.view.View;
@@ -36,15 +35,17 @@ public class DragNDropListView extends ListView {
 	int mEndPosition;
 	int mDragPointOffset;		//Used to adjust drag view location
 	
+	int hx;						//bsz - Used to store starting X coordinate right after onStartDrag event
+	int hy;						//bsz - Used to store starting Y coordinate right after onStartDrag event
+	
 	ImageView mDragView;
-	GestureDetector mGestureDetector;
 	
 	DropListener mDropListener;
 	RemoveListener mRemoveListener;
 	DragListener mDragListener;
 	
 	public DragNDropListView(Context context, AttributeSet attrs) {
-		super(context, attrs);
+		super(context, attrs);		
 	}
 	
 	public void setDropListener(DropListener l) {
@@ -63,7 +64,7 @@ public class DragNDropListView extends ListView {
 	public boolean onTouchEvent(MotionEvent ev) {
 		final int action = ev.getAction();
 		final int x = (int) ev.getX();
-		final int y = (int) ev.getY();	
+		final int y = (int) ev.getY();
 		
 		if (action == MotionEvent.ACTION_DOWN && x < this.getWidth()/4) {
 			mDragMode = true;
@@ -79,15 +80,23 @@ public class DragNDropListView extends ListView {
 					int mItemPosition = mStartPosition - getFirstVisiblePosition();
                     mDragPointOffset = y - getChildAt(mItemPosition).getTop();
                     mDragPointOffset -= ((int)ev.getRawY()) - y;
-					startDrag(mItemPosition,y);
-					drag(0,y);// replace 0 with x if desired
+					startDrag(mItemPosition, x, y);
+					drag(x, y);// replace 0 with x if desired
 				}	
 				break;
 			case MotionEvent.ACTION_MOVE:
-				drag(0,y);// replace 0 with x if desired
+				drag(x, y);// replace 0 with x if desired
 				break;
 			case MotionEvent.ACTION_CANCEL:
-			case MotionEvent.ACTION_UP:
+			case MotionEvent.ACTION_UP://bsz - Monitoring the release event, if width is 5/8th of the screen and height is almost the same, it is a drop event
+				if (mDragView != null) {              	
+		        	int deltaX = (int)Math.abs(hx-x);
+		        	int deltaY = (int)Math.abs(hy - y);
+		        	if ((deltaX > 5*mDragView.getWidth()/8) && (deltaY < mDragView.getHeight())) {
+		        		mRemoveListener.onRemove(mStartPosition);
+		            	stopDrag(mStartPosition - getFirstVisiblePosition());
+		        	}
+		        }
 			default:
 				mDragMode = false;
 				mEndPosition = pointToPosition(x,y);
@@ -101,7 +110,8 @@ public class DragNDropListView extends ListView {
 	
 	// move the drag view
 	private void drag(int x, int y) {
-		if (mDragView != null) {
+		
+    	if (mDragView != null) {
 			WindowManager.LayoutParams layoutParams = (WindowManager.LayoutParams) mDragView.getLayoutParams();
 			layoutParams.x = x;
 			layoutParams.y = y - mDragPointOffset;
@@ -110,19 +120,22 @@ public class DragNDropListView extends ListView {
 			mWindowManager.updateViewLayout(mDragView, layoutParams);
 
 			if (mDragListener != null)
-				mDragListener.onDrag(x, y, null);// change null to "this" when ready to use
+				mDragListener.onDrag(x, y, this);// change null to "this" when ready to use
 		}
 	}
 
 	// enable the drag view for dragging
-	private void startDrag(int itemIndex, int y) {
+	private void startDrag(int itemIndex, int x, int y) {
 		stopDrag(itemIndex);
+		
+		hx = x;	//bsz - passing the X value to historical X
+		hy = y;	//bsz - passing the Y value to historical Y
 
 		View item = getChildAt(itemIndex);
 		if (item == null) return;
 		item.setDrawingCacheEnabled(true);
 		if (mDragListener != null)
-			mDragListener.onStartDrag(item);
+			mDragListener.onStartDrag(item, hx, hy);	//bsz - hx, hy must be passed for implementing object
 		
         // Create a copy of the drawing cache so that it does not get recycled
         // by the framework when the list tries to clean up memory
@@ -143,6 +156,9 @@ public class DragNDropListView extends ListView {
         mWindowParams.format = PixelFormat.TRANSLUCENT;
         mWindowParams.windowAnimations = 0;
         
+        mWindowParams.alpha=0.85f;		//bsz - added some alpha and dim setting for my fun, remove if it is ugly for you 
+        mWindowParams.dimAmount=0.2f;	//
+        
         Context context = getContext();
         ImageView v = new ImageView(context);
         v.setImageBitmap(bitmap);      
@@ -150,6 +166,13 @@ public class DragNDropListView extends ListView {
         WindowManager mWindowManager = (WindowManager)context.getSystemService(Context.WINDOW_SERVICE);
         mWindowManager.addView(v, mWindowParams);
         mDragView = v;
+        
+        /*
+         * bsz - Added a new afterStartDrag event to enable changes on the original location
+         */
+        
+        if (mDragListener != null)
+			mDragListener.afterStartDrag(item);
 	}
 
 	// destroy drag view
@@ -164,26 +187,4 @@ public class DragNDropListView extends ListView {
             mDragView = null;
         }
 	}
-
-//	private GestureDetector createFlingDetector() {
-//		return new GestureDetector(getContext(), new SimpleOnGestureListener() {
-//            @Override
-//            public boolean onFling(MotionEvent e1, MotionEvent e2, float velocityX,
-//                    float velocityY) {         	
-//                if (mDragView != null) {              	
-//                	int deltaX = (int)Math.abs(e1.getX()-e2.getX());
-//                	int deltaY = (int)Math.abs(e1.getY() - e2.getY());
-//               
-//                	if (deltaX > mDragView.getWidth()/2 && deltaY < mDragView.getHeight()) {
-//                		mRemoveListener.onRemove(mStartPosition);
-//                	}
-//                	
-//                	stopDrag(mStartPosition - getFirstVisiblePosition());
-//
-//                    return true;
-//                }
-//                return false;
-//            }
-//        });
-//	}
 }

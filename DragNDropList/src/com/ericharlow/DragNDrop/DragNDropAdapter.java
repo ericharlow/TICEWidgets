@@ -30,6 +30,8 @@ public final class DragNDropAdapter extends BaseAdapter implements RemoveListene
     private int[] mLayouts;
     private LayoutInflater mInflater;
     private ArrayList<String> mContent;
+    
+    ChangeListener changeListener; //bsz - DragNDropAdapter must have a listener to handle change events
 
     public DragNDropAdapter(Context context, ArrayList<String> content) {
         init(context,new int[]{android.R.layout.simple_list_item_1},new int[]{android.R.id.text1}, content);
@@ -45,9 +47,20 @@ public final class DragNDropAdapter extends BaseAdapter implements RemoveListene
     	mIds = ids;
     	mLayouts = layouts;
     	mContent = content;
+    	
     }
     
+    //bsz -
     /**
+     * Public method to pass the ChangeListener object to handle changes in the list
+     * @param changeListener Listener for list change events  
+     */
+    
+    public void setChangeListener(ChangeListener changeListener) {
+		this.changeListener = changeListener;
+	}
+
+	/**
      * The number of items in the list
      * @see android.widget.ListAdapter#getCount()
      */
@@ -117,11 +130,20 @@ public final class DragNDropAdapter extends BaseAdapter implements RemoveListene
 	public void onRemove(int which) {
 		if (which < 0 || which > mContent.size()) return;		
 		mContent.remove(which);
+		if (changeListener != null){		//bsz - if we have a changelistener, let's call it!
+			changeListener.onChange();
+		}
 	}
 
 	public void onDrop(int from, int to) {
-		String temp = mContent.get(from);
-		mContent.remove(from);
-		mContent.add(to,temp);
+		if (from < mContent.size()) {
+			String temp = mContent.get(from);
+			mContent.remove(from);
+			mContent.add(to,temp);
+			if (changeListener != null){	//bsz - if we have a changelistener, let's call it!
+				changeListener.onChange();
+			}
+		}
 	}
+	
 }
