@@ -1,0 +1,5 @@
+Base code from Eric Harlow
+
+added some new features by Barna Szternák:
+ - dropping items from list
+ - catching change event to monitor list editing (e.g. dialog before exiting to save list elements)
