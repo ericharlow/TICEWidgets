@@ -18,6 +18,7 @@ package com.ericharlow.DragNDrop;
 
 import java.util.ArrayList;
 
+import android.R.color;
 import android.app.ListActivity;
 import android.os.Bundle;
 import android.view.View;
@@ -75,7 +76,7 @@ public class DragNDropListActivity extends ListActivity {
     	new DragListener() {
 
     	int backgroundColor = 0xe0103010;
-    	int defaultBackgroundColor;
+//    	int defaultBackgroundColor;
     	
 			public void onDrag(int x, int y, ListView listView) {
 				// TODO Auto-generated method stub
@@ -83,7 +84,7 @@ public class DragNDropListActivity extends ListActivity {
 
 			public void onStartDrag(View itemView) {
 				itemView.setVisibility(View.INVISIBLE);
-				defaultBackgroundColor = itemView.getDrawingCacheBackgroundColor();
+//				defaultBackgroundColor = itemView.getDrawingCacheBackgroundColor();
 				itemView.setBackgroundColor(backgroundColor);
 				ImageView iv = (ImageView)itemView.findViewById(R.id.ImageView01);
 				if (iv != null) iv.setVisibility(View.INVISIBLE);
@@ -91,7 +92,7 @@ public class DragNDropListActivity extends ListActivity {
 
 			public void onStopDrag(View itemView) {
 				itemView.setVisibility(View.VISIBLE);
-				itemView.setBackgroundColor(defaultBackgroundColor);
+				itemView.setBackgroundColor(color.background_dark);
 				ImageView iv = (ImageView)itemView.findViewById(R.id.ImageView01);
 				if (iv != null) iv.setVisibility(View.VISIBLE);
 			}
